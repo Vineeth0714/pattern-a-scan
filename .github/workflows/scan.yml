@@ -2,9 +2,9 @@ name: Pattern A Daily Scan
 
 on:
   schedule:
-    # Mon-Fri 5:00 PM IST = 11:30 UTC (5:30 IST diff). Runs weekdays only;
+    # Mon-Fri 9:00 PM IST = 15:30 UTC. Runs weekdays only;
     # the scanner's no-new-data guard also skips NSE holidays.
-    - cron: '30 11 * * 1-5'
+    - cron: '30 15 * * 1-5'
   workflow_dispatch:          # allow manual trigger from GitHub UI
 
 jobs:
