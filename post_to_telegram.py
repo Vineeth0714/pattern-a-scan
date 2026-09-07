@@ -34,7 +34,7 @@ def main():
         lines.append("No waiting setups right now.")
     else:
         lines.append("STILL WAITING / not yet activated (no entry yet - wait for break above trigger High):")
-        for x in waiting[:5]:
+        for x in waiting[:10]:
             lines.append("- %s: trig %s, +%.1f%%, %.0fx vol, High %.2f" % (
                 x["symbol"], fmt_date(x["trigger_date"]), x["move_pct"],
                 x["surge_ratio"], x["trigger_high"]))
