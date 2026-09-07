@@ -1,0 +1,6 @@
+# Local scan artifacts - not needed in the repo (regenerated each run)
+__pycache__/
+*.pyc
+cache/
+last_reported.txt
+scan_out.txt

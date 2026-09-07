@@ -1,0 +1,42 @@
+name: Pattern A Daily Scan
+
+on:
+  schedule:
+    # Mon-Fri 5:00 PM IST = 11:30 UTC (5:30 IST diff). Runs weekdays only;
+    # the scanner's no-new-data guard also skips NSE holidays.
+    - cron: '30 11 * * 1-5'
+  workflow_dispatch:          # allow manual trigger from GitHub UI
+
+jobs:
+  scan:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Run Pattern A scan
+        run: python run_scan.py > scan_out.txt 2>&1 || true
+        env:
+          # NARROW thresholds baked into scanner.py defaults.
+          PYTHONUNBUFFERED: 1
+
+      # If the script says SKIP (weekend/holiday), exit successfully without posting.
+      - name: Check for new data
+        id: check
+        run: |
+          if grep -q '^SKIP' scan_out.txt; then
+            echo "NO_NEW_DATA - skipping Telegram post"
+            echo "skip=true" >> $GITHUB_OUTPUT
+          else
+            echo "skip=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Post brief to Telegram
+        if: steps.check.outputs.skip != 'true'
+        run: python post_to_telegram.py
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
