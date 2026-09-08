@@ -22,6 +22,12 @@ SPIKE_DOMINATES = 3.0   # trigger volume >= 3x the largest prior base bar
 SPIKE = SPIKE_DOMINATES
 MIN_MOVE_PCT    = 6.0   # min same-day % price move on a trigger day (NARROW)
 
+# --- teacher's volatility/extension filter ---
+VOL_WINDOW   =  22
+MAX_VOL_PCT   =  4.0      # cap avg day-move
+MAX_NEW_HIGHS = 2      # cap 20-day-high sessions
+
+
 
 def fetch_yf(symbol, delay_h=6):
     """Return ascending list of [date, o, h, l, c, vol] for symbol. Cached ~delay_h."""
@@ -86,6 +92,23 @@ def analyse(rows):
             continue
         # base must be quiet: no prior bar near the spike, and no prior strong close
         min_base = min(vols)
+
+# --- teacher filter: volatility + fresh-20day-high count over prior month ---
+        w2 = prior[-VOL_WINDOW:]
+        if len(w2) > 1:
+            dv = [abs(w2[i][4] / w2[i-1][4] - 1) for i in range(1, len(w2))]
+            avg_daily_vol = (sum(dv) / len(dv)) * 100.0
+        else:
+            avg_daily_vol = 0.0
+        highcount = 0
+        base2 = len(prior) - len(w2)
+        for i in range(len(w2)):
+            ref2 = rows[max(0, base2 + i - 20):base2 + i]
+            if ref2 and w2[i][2] >= max(r[2] for r in ref2):
+                highcount += 1
+        too_volatile = avg_daily_vol > MAX_VOL_PCT
+        too_extended = highcount > MAX_NEW_HIGHS
+        avg_daily_vol = round(avg_daily_vol, 2)
         cands.append({
             "trigger_date": trig[0],
             "trigger_high": t_high,
@@ -95,7 +118,11 @@ def analyse(rows):
             "med_prior_vol": int(med),
             "max_prior_vol": int(mx),
             "surge_ratio": round(t_vol / med, 1),
-            "still_waiting": True,          # replaced by caller after checking break
+            "still_waiting": True,
+            "avg_daily_vol": avg_daily_vol,
+            "highcount": highcount,
+            "too_volatile": too_volatile,
+            "too_extended": too_extended,
         })
         if len(cands) >= 4:
             break

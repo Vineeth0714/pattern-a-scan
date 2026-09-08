@@ -11,7 +11,7 @@ importlib.reload(S)
 BASE = os.path.dirname(os.path.abspath(__file__))
 RESULT = os.path.join(BASE, "result.json")
 
-FRESH_CUTOFF = 5  # only trigger days within the last trading week interest us today
+FRESH_CUTOFF =  14  # trigger days, last ~2 weeks, fills to 5-10 picks)
 
 # State file recording the last trading day we already reported on.
 STATE_FILE = os.path.join(BASE, "last_reported.txt")
@@ -92,12 +92,21 @@ def main(max_stocks=None, verbose=False):
                 "surge_ratio": c["surge_ratio"],
                 "broke": broke, "break_date": brk_date,
                 "vol": c["vol"],
+                "avg_daily_vol": c.get("avg_daily_vol"),
+                "highcount": c.get("highcount"),
+                "too_volatile": c.get("too_volatile"),
+                "too_extended": c.get("too_extended"),
             })
             if verbose:
                 print(json.dumps(results[-1], default=str))
-    # sort: broke first, then recency
-    results.sort(key=lambda r: (not r["broke"], r["trigger_date"] or ""), reverse=False)
-    json.dump(results, open(RESULT, "w"), indent=2, default=str)
+    # tier sort: waiting-clean -> waiting-flagged -> broke; big-surge first; show up to 10
+        def _tier(r):
+            waiting = not r.get("broke", False)
+            clean = not (bool(r.get("too_volatile")) or bool(r.get("too_extended")))
+            return (0 if (waiting and clean) else 1 if waiting else 2, -r.get("surge_ratio", 0))
+        results.sort(key=_tier)
+        results = results[:10]
+        json.dump(results, open(RESULT, "w"), indent=2, default=str)
     # record the trading day we just covered, so a same-day re-run is skipped
     try:
         open(STATE_FILE, "w").write(reason)
