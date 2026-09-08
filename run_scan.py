@@ -105,7 +105,7 @@ def main(max_stocks=None, verbose=False):
             clean = not (bool(r.get("too_volatile")) or bool(r.get("too_extended")))
             return (0 if (waiting and clean) else 1 if waiting else 2, -r.get("surge_ratio", 0))
         results.sort(key=_tier)
-        results = results[:10]
+        results = [r for r in results if not r.get("broke", False)]
         json.dump(results, open(RESULT, "w"), indent=2, default=str)
     # record the trading day we just covered, so a same-day re-run is skipped
     try:
