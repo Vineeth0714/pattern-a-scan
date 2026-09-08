@@ -11,7 +11,7 @@ importlib.reload(S)
 BASE = os.path.dirname(os.path.abspath(__file__))
 RESULT = os.path.join(BASE, "result.json")
 
-FRESH_CUTOFF = 12  # only trigger days within the last ~12 sessions interest us today
+FRESH_CUTOFF = 5  # only trigger days within the last trading week interest us today
 
 # State file recording the last trading day we already reported on.
 STATE_FILE = os.path.join(BASE, "last_reported.txt")
