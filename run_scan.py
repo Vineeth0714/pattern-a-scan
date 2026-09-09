@@ -46,7 +46,11 @@ def load_universe(path):
 
 
 def main(max_stocks=None, verbose=False):
-    uni = load_universe(os.path.join(BASE, "universe.csv"))
+    # prefer the full NSE universe (all EQ), fall back to Nifty-500
+    uni_path = os.path.join(BASE, "universe_full.csv")
+    if not os.path.exists(uni_path):
+        uni_path = os.path.join(BASE, "universe.csv")
+    uni = load_universe(uni_path)
     if max_stocks:
         uni = uni[:max_stocks]
     hits = []
