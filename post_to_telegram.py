@@ -27,17 +27,21 @@ def main():
     if not res:
         print("NO_HITS no message")
         return
-    waiting = sorted([x for x in res if not x["broke"]], key=lambda r: -r["surge_ratio"])
+    waiting = sorted([x for x in res if not x["broke"]], key=lambda r: (bool(r.get("too_volatile") or r.get("too_extended")), -r["surge_ratio"]))
     broke   = [x for x in res if x["broke"]]
-    lines = ["Pattern A scan (NARROW: >=6% move, >=8x surge) - waiting stocks", ""]
-    if not waiting:
+    display_cap = 15
+    selected = waiting[:display_cap]
+    lines = ["Pattern A scan (NARROW: >=6% move, >=8x surge) - waiting stocks", "",
+             "TOTAL WAITING: %d; DISPLAYING: %d (clean first)" % (len(waiting), len(selected))]
+    if not selected:
         lines.append("No waiting setups right now.")
     else:
-        lines.append("STILL WAITING / not yet activated (no entry yet - wait for break above trigger High):")
-        for x in waiting[:10]:
-            lines.append("- %s: trig %s, +%.1f%%, %.0fx vol, High %.2f" % (
+        lines.append("STILL WAITING / not yet activated (no entry - wait for break above trigger High):")
+        for x in selected:
+            flag = " (FLAG)" if (x.get("too_volatile") or x.get("too_extended")) else ""
+            lines.append("- %s: trig %s, +%.1f%%, %.0fx vol, High %.2f%s" % (
                 x["symbol"], fmt_date(x["trigger_date"]), x["move_pct"],
-                x["surge_ratio"], x["trigger_high"]))
+                x["surge_ratio"], x["trigger_high"], flag))
     # Note: broke/activated entries intentionally omitted per user's preference.
     lines += ["",
               "RULE: enter only above the HIGH of the trigger day; a post-spike pullback is normal.",
