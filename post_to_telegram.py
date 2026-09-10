@@ -27,7 +27,11 @@ def main():
     if not res:
         print("NO_HITS no message")
         return
-    waiting = sorted([x for x in res if not x["broke"]], key=lambda r: (bool(r.get("too_volatile") or r.get("too_extended")), -r["surge_ratio"]))
+    # price floor: drop anything below Rs 100 (trigger_close as screen approx)
+    waiting = [x for x in res if not x["broke"] and x.get("trigger_close", 0) >= 100]
+    # clean (teacher-passed) first, then newest trigger day first
+    waiting.sort(key=lambda r: bool(r.get("too_volatile") or r.get("too_extended")))
+    waiting.sort(key=lambda r: r.get("trigger_date", ""), reverse=True)
     broke   = [x for x in res if x["broke"]]
     display_cap = 15
     selected = waiting[:display_cap]
